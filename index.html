@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Crawler</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+        #game {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border: 2px solid #333;
+            margin: 20px auto;
+            background-color: #fff;
+        }
+        #player {
+            width: 30px;
+            height: 30px;
+            background-color: red;
+            position: absolute;
+            transition: left 0.2s, top 0.2s;
+        }
+        .treasure {
+            width: 20px;
+            height: 20px;
+            background-color: gold;
+            position: absolute;
+        }
+        .enemy {
+            width: 30px;
+            height: 30px;
+            background-color: blue;
+            position: absolute;
+            transition: left 0.2s, top 0.2s;
+        }
+        #info {
+            margin-top: 20px;
+        }
+        #restart {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dungeon Crawler</h1>
+    <div id="game">
+        <div id="player"></div>
+    </div>
+    <div id="info">
+        <p>Treasure: <span id="treasureCount">0</span></p>
+        <p>Level: <span id="level">1</span></p>
+        <button id="restart">Restart Game</button>
+    </div>
+
+    <script>
+        const game = document.getElementById('game');
+        const player = document.getElementById('player');
+        const treasureCountDisplay = document.getElementById('treasureCount');
+        const levelDisplay = document.getElementById('level');
+        const restartButton = document.getElementById('restart');
+
+        let playerPosition = { x: 0, y: 0 };
+        let treasures = [];
+        let enemies = [];
+        let treasureCount = 0;
+        let level = 1;
+        const enemySpeed = 1; // Speed of enemy chasing
+        let enemyInterval;
+
+        function initializeGame() {
+            playerPosition = { x: 0, y: 0 };
+            treasures = [];
+            enemies = [];
+            treasureCount = 0;
+
+            // Clear the game area
+            game.innerHTML = '';
+            game.appendChild(player);
+            player.style.left = '0px';
+            player.style.top = '0px';
+            
+            generateTreasures(3 + (level - 1) * 2); // Increase treasure count per level
+            generateEnemies(2 + (level - 1)); // Increase enemy count per level
+            updateTreasureCount();
+            updateLevel();
+
+            if (enemyInterval) clearInterval(enemyInterval);
+            enemyInterval = setInterval(moveEnemies, 100); // Move enemies every 100 ms
+        }
+
+        function generateTreasures(count) {
+            for (let i = 0; i < count; i++) {
+                const treasure = document.createElement('div');
+                treasure.className = 'treasure';
+                treasure.style.left = `${Math.floor(Math.random() * 280)}px`;
+                treasure.style.top = `${Math.floor(Math.random() * 280)}px`;
+                treasures.push(treasure);
+                game.appendChild(treasure);
+            }
+        }
+
+        function generateEnemies(count) {
+            for (let i = 0; i < count; i++) {
+                const enemy = document.createElement('div');
+                enemy.className = 'enemy';
+                enemy.style.left = `${Math.floor(Math.random() * 280)}px`;
+                enemy.style.top = `${Math.floor(Math.random() * 280)}px`;
+                enemies.push(enemy);
+                game.appendChild(enemy);
+            }
+        }
+
+        function updateTreasureCount() {
+            treasureCountDisplay.textContent = treasureCount;
+        }
+
+        function updateLevel() {
+            levelDisplay.textContent = level;
+        }
+
+        function movePlayer(direction) {
+            if (direction === 'up' && playerPosition.y > 0) {
+                playerPosition.y -= 30;
+            } else if (direction === 'down' && playerPosition.y < 270) {
+                playerPosition.y += 30;
+            } else if (direction === 'left' && playerPosition.x > 0) {
+                playerPosition.x -= 30;
+            } else if (direction === 'right' && playerPosition.x < 270) {
+                playerPosition.x += 30;
+            }
+            player.style.left = `${playerPosition.x}px`;
+            player.style.top = `${playerPosition.y}px`;
+            checkCollisions();
+        }
+
+        function checkCollisions() {
+            // Check for treasure collection
+            treasures.forEach((treasure, index) => {
+                if (isColliding(player, treasure)) {
+                    treasure.remove();
+                    treasures.splice(index, 1);
+                    treasureCount++;
+                    updateTreasureCount();
+                    if (treasureCount === (3 + (level - 1) * 2)) {
+                        levelUp();
+                    }
+                }
+            });
+
+            // Check for enemy collision
+            enemies.forEach(enemy => {
+                if (isColliding(player, enemy)) {
+                    alert('Game Over! You were caught by an enemy!');
+                    initializeGame();
+                }
+            });
+        }
+
+        function levelUp() {
+            level++;
+            alert(`Congratulations! You've reached Level ${level}!`);
+            initializeGame();
+        }
+
+        function moveEnemies() {
+            enemies.forEach(enemy => {
+                const enemyPosition = {
+                    x: parseInt(enemy.style.left),
+                    y: parseInt(enemy.style.top)
+                };
+
+                const deltaX = playerPosition.x - enemyPosition.x;
+                const deltaY = playerPosition.y - enemyPosition.y;
+
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                if (distance > 0) {
+                    enemyPosition.x += (deltaX / distance) * enemySpeed;
+                    enemyPosition.y += (deltaY / distance) * enemySpeed;
+                }
+
+                enemy.style.left = `${Math.round(enemyPosition.x)}px`;
+                enemy.style.top = `${Math.round(enemyPosition.y)}px`;
+            });
+        }
+
+        function isColliding(div1, div2) {
+            const rect1 = div1.getBoundingClientRect();
+            const rect2 = div2.getBoundingClientRect();
+
+            return !(
+                rect1.top > rect2.bottom ||
+                rect1.bottom < rect2.top ||
+                rect1.left > rect2.right ||
+                rect1.right < rect2.left
+            );
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowUp') movePlayer('up');
+            if (event.key === 'ArrowDown') movePlayer('down');
+            if (event.key === 'ArrowLeft') movePlayer('left');
+            if (event.key === 'ArrowRight') movePlayer('right');
+        });
+
+        restartButton.addEventListener('click', initializeGame);
+
+        // Start the game for the first time
+        initializeGame();
+    </script>
+</body>
+</html>
