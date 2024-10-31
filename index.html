@@ -8,7 +8,8 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            background-color: #f0f0f0;
+            background-color: #222;
+            color: #fff;
         }
         #game {
             position: relative;
@@ -16,7 +17,9 @@
             height: 300px;
             border: 2px solid #333;
             margin: 20px auto;
-            background-color: #fff;
+            background-image: url('path_to_your_background_image.jpg');
+            background-size: cover;
+            overflow: hidden;
         }
         #player {
             width: 30px;
@@ -24,12 +27,14 @@
             background-color: red;
             position: absolute;
             transition: left 0.2s, top 0.2s;
+            border-radius: 50%;
         }
         .treasure {
             width: 20px;
             height: 20px;
             background-color: gold;
             position: absolute;
+            border-radius: 50%;
         }
         .enemy {
             width: 30px;
@@ -37,12 +42,16 @@
             background-color: blue;
             position: absolute;
             transition: left 0.2s, top 0.2s;
+            border-radius: 50%;
         }
         #info {
             margin-top: 20px;
         }
         #restart {
             display: none;
+        }
+        #health {
+            color: lime;
         }
     </style>
 </head>
@@ -54,6 +63,8 @@
     <div id="info">
         <p>Treasure: <span id="treasureCount">0</span></p>
         <p>Level: <span id="level">1</span></p>
+        <p>Health: <span id="health">3</span></p>
+        <p>High Score: <span id="highScore">0</span></p>
         <button id="restart">Restart Game</button>
     </div>
 
@@ -62,6 +73,8 @@
         const player = document.getElementById('player');
         const treasureCountDisplay = document.getElementById('treasureCount');
         const levelDisplay = document.getElementById('level');
+        const healthDisplay = document.getElementById('health');
+        const highScoreDisplay = document.getElementById('highScore');
         const restartButton = document.getElementById('restart');
 
         let playerPosition = { x: 0, y: 0 };
@@ -69,14 +82,22 @@
         let enemies = [];
         let treasureCount = 0;
         let level = 1;
-        const enemySpeed = 1; // Speed of enemy chasing
+        let playerHealth = 3;
+        let highScore = 0;
+        const enemySpeed = 0.5; // Speed of enemy chasing
         let enemyInterval;
+
+        function playSound(src) {
+            const audio = new Audio(src);
+            audio.play();
+        }
 
         function initializeGame() {
             playerPosition = { x: 0, y: 0 };
             treasures = [];
             enemies = [];
             treasureCount = 0;
+            playerHealth = 3;
 
             // Clear the game area
             game.innerHTML = '';
@@ -84,13 +105,14 @@
             player.style.left = '0px';
             player.style.top = '0px';
             
-            generateTreasures(3 + (level - 1) * 2); // Increase treasure count per level
-            generateEnemies(2 + (level - 1)); // Increase enemy count per level
+            generateTreasures(3 + (level - 1) * 2);
+            generateEnemies(2 + (level - 1));
             updateTreasureCount();
             updateLevel();
+            updateHealth();
 
             if (enemyInterval) clearInterval(enemyInterval);
-            enemyInterval = setInterval(moveEnemies, 100); // Move enemies every 100 ms
+            enemyInterval = setInterval(moveEnemies, 100);
         }
 
         function generateTreasures(count) {
@@ -123,6 +145,10 @@
             levelDisplay.textContent = level;
         }
 
+        function updateHealth() {
+            healthDisplay.textContent = playerHealth;
+        }
+
         function movePlayer(direction) {
             if (direction === 'up' && playerPosition.y > 0) {
                 playerPosition.y -= 30;
@@ -139,12 +165,12 @@
         }
 
         function checkCollisions() {
-            // Check for treasure collection
             treasures.forEach((treasure, index) => {
                 if (isColliding(player, treasure)) {
                     treasure.remove();
                     treasures.splice(index, 1);
                     treasureCount++;
+                    playSound('path_to_collection_sound.mp3');
                     updateTreasureCount();
                     if (treasureCount === (3 + (level - 1) * 2)) {
                         levelUp();
@@ -152,11 +178,13 @@
                 }
             });
 
-            // Check for enemy collision
             enemies.forEach(enemy => {
                 if (isColliding(player, enemy)) {
-                    alert('Game Over! You were caught by an enemy!');
-                    initializeGame();
+                    playerHealth--;
+                    updateHealth();
+                    if (playerHealth <= 0) {
+                        gameOver();
+                    }
                 }
             });
         }
@@ -164,6 +192,16 @@
         function levelUp() {
             level++;
             alert(`Congratulations! You've reached Level ${level}!`);
+            initializeGame();
+        }
+
+        function gameOver() {
+            clearInterval(enemyInterval);
+            alert('Game Over! You were caught by an enemy!');
+            if (treasureCount > highScore) {
+                highScore = treasureCount;
+                highScoreDisplay.textContent = highScore;
+            }
             initializeGame();
         }
 
