@@ -26,7 +26,7 @@
             height: 30px;
             background-color: red;
             position: absolute;
-            transition: left 0.2s, top 0.2s;
+            transition: left 0.1s, top 0.1s;
             border-radius: 50%;
         }
         .treasure {
@@ -41,17 +41,25 @@
             height: 30px;
             background-color: blue;
             position: absolute;
-            transition: left 0.2s, top 0.2s;
+            transition: left 0.1s, top 0.1s;
             border-radius: 50%;
         }
         #info {
             margin-top: 20px;
         }
-        #restart {
-            display: none;
-        }
         #health {
-            color: lime;
+            width: 100px;
+            height: 10px;
+            background-color: red;
+            margin: 10px auto;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #healthBar {
+            height: 100%;
+            background-color: lime;
+            width: 100%;
+            transition: width 0.3s;
         }
     </style>
 </head>
@@ -64,6 +72,9 @@
         <p>Treasure: <span id="treasureCount">0</span></p>
         <p>Level: <span id="level">1</span></p>
         <p>Health: <span id="health">3</span></p>
+        <div id="health">
+            <div id="healthBar"></div>
+        </div>
         <p>High Score: <span id="highScore">0</span></p>
         <button id="restart">Restart Game</button>
     </div>
@@ -74,6 +85,7 @@
         const treasureCountDisplay = document.getElementById('treasureCount');
         const levelDisplay = document.getElementById('level');
         const healthDisplay = document.getElementById('health');
+        const healthBar = document.getElementById('healthBar');
         const highScoreDisplay = document.getElementById('highScore');
         const restartButton = document.getElementById('restart');
 
@@ -84,8 +96,10 @@
         let level = 1;
         let playerHealth = 3;
         let highScore = 0;
-        const enemySpeed = 0.5; // Speed of enemy chasing
+        let enemySpeed = 0.5; // Speed of enemy chasing
         let enemyInterval;
+        let moveInterval;
+        let movingDirection = null;
 
         function playSound(src) {
             const audio = new Audio(src);
@@ -104,12 +118,12 @@
             game.appendChild(player);
             player.style.left = '0px';
             player.style.top = '0px';
-            
+
             generateTreasures(3 + (level - 1) * 2);
             generateEnemies(2 + (level - 1));
             updateTreasureCount();
             updateLevel();
-            updateHealth();
+            updateHealthBar();
 
             if (enemyInterval) clearInterval(enemyInterval);
             enemyInterval = setInterval(moveEnemies, 100);
@@ -145,19 +159,19 @@
             levelDisplay.textContent = level;
         }
 
-        function updateHealth() {
-            healthDisplay.textContent = playerHealth;
+        function updateHealthBar() {
+            healthBar.style.width = `${(playerHealth / 3) * 100}%`;
         }
 
-        function movePlayer(direction) {
-            if (direction === 'up' && playerPosition.y > 0) {
-                playerPosition.y -= 30;
-            } else if (direction === 'down' && playerPosition.y < 270) {
-                playerPosition.y += 30;
-            } else if (direction === 'left' && playerPosition.x > 0) {
-                playerPosition.x -= 30;
-            } else if (direction === 'right' && playerPosition.x < 270) {
-                playerPosition.x += 30;
+        function movePlayer() {
+            if (movingDirection === 'up' && playerPosition.y > 0) {
+                playerPosition.y -= 2;
+            } else if (movingDirection === 'down' && playerPosition.y < 270) {
+                playerPosition.y += 2;
+            } else if (movingDirection === 'left' && playerPosition.x > 0) {
+                playerPosition.x -= 2;
+            } else if (movingDirection === 'right' && playerPosition.x < 270) {
+                playerPosition.x += 2;
             }
             player.style.left = `${playerPosition.x}px`;
             player.style.top = `${playerPosition.y}px`;
@@ -171,6 +185,7 @@
                     treasures.splice(index, 1);
                     treasureCount++;
                     playSound('path_to_collection_sound.mp3');
+                    knockBackEnemies();
                     updateTreasureCount();
                     if (treasureCount === (3 + (level - 1) * 2)) {
                         levelUp();
@@ -181,11 +196,32 @@
             enemies.forEach(enemy => {
                 if (isColliding(player, enemy)) {
                     playerHealth--;
-                    updateHealth();
+                    updateHealthBar();
                     if (playerHealth <= 0) {
                         gameOver();
                     }
                 }
+            });
+        }
+
+        function knockBackEnemies() {
+            enemies.forEach(enemy => {
+                const enemyPosition = {
+                    x: parseInt(enemy.style.left),
+                    y: parseInt(enemy.style.top)
+                };
+
+                const deltaX = enemyPosition.x - playerPosition.x;
+                const deltaY = enemyPosition.y - playerPosition.y;
+
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                if (distance < 50) { // Adjust for knockback distance
+                    enemyPosition.x += (deltaX / distance) * 10; // Knockback distance
+                    enemyPosition.y += (deltaY / distance) * 10; // Knockback distance
+                }
+
+                enemy.style.left = `${Math.round(enemyPosition.x)}px`;
+                enemy.style.top = `${Math.round(enemyPosition.y)}px`;
             });
         }
 
@@ -197,6 +233,7 @@
 
         function gameOver() {
             clearInterval(enemyInterval);
+            clearInterval(moveInterval);
             alert('Game Over! You were caught by an enemy!');
             if (treasureCount > highScore) {
                 highScore = treasureCount;
@@ -226,29 +263,4 @@
             });
         }
 
-        function isColliding(div1, div2) {
-            const rect1 = div1.getBoundingClientRect();
-            const rect2 = div2.getBoundingClientRect();
-
-            return !(
-                rect1.top > rect2.bottom ||
-                rect1.bottom < rect2.top ||
-                rect1.left > rect2.right ||
-                rect1.right < rect2.left
-            );
-        }
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowUp') movePlayer('up');
-            if (event.key === 'ArrowDown') movePlayer('down');
-            if (event.key === 'ArrowLeft') movePlayer('left');
-            if (event.key === 'ArrowRight') movePlayer('right');
-        });
-
-        restartButton.addEventListener('click', initializeGame);
-
-        // Start the game for the first time
-        initializeGame();
-    </script>
-</body>
-</html>
+        function isColliding(div1, div
