@@ -96,10 +96,11 @@
         let level = 1;
         let playerHealth = 3;
         let highScore = 0;
-        let enemySpeed = 0.5; // Speed of enemy chasing
+        let enemySpeed = 0.5;
         let enemyInterval;
         let moveInterval;
         let movingDirection = null;
+        let gameStarted = false;
 
         function playSound(src) {
             const audio = new Audio(src);
@@ -113,7 +114,6 @@
             treasureCount = 0;
             playerHealth = 3;
 
-            // Clear the game area
             game.innerHTML = '';
             game.appendChild(player);
             player.style.left = '0px';
@@ -127,6 +127,7 @@
 
             if (enemyInterval) clearInterval(enemyInterval);
             enemyInterval = setInterval(moveEnemies, 100);
+            gameStarted = false; // Reset game started flag
         }
 
         function generateTreasures(count) {
@@ -144,8 +145,17 @@
             for (let i = 0; i < count; i++) {
                 const enemy = document.createElement('div');
                 enemy.className = 'enemy';
-                enemy.style.left = `${Math.floor(Math.random() * 280)}px`;
-                enemy.style.top = `${Math.floor(Math.random() * 280)}px`;
+
+                let enemyPosition;
+                do {
+                    enemyPosition = {
+                        x: Math.floor(Math.random() * 280),
+                        y: Math.floor(Math.random() * 280)
+                    };
+                } while (Math.abs(enemyPosition.x - playerPosition.x) < 30 && Math.abs(enemyPosition.y - playerPosition.y) < 30);
+
+                enemy.style.left = `${enemyPosition.x}px`;
+                enemy.style.top = `${enemyPosition.y}px`;
                 enemies.push(enemy);
                 game.appendChild(enemy);
             }
@@ -179,6 +189,8 @@
         }
 
         function checkCollisions() {
+            if (!gameStarted) return; // Skip collision checks if the game hasn't started yet
+
             treasures.forEach((treasure, index) => {
                 if (isColliding(player, treasure)) {
                     treasure.remove();
@@ -215,9 +227,9 @@
                 const deltaY = enemyPosition.y - playerPosition.y;
 
                 const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                if (distance < 50) { // Adjust for knockback distance
-                    enemyPosition.x += (deltaX / distance) * 10; // Knockback distance
-                    enemyPosition.y += (deltaY / distance) * 10; // Knockback distance
+                if (distance < 50) {
+                    enemyPosition.x += (deltaX / distance) * 10;
+                    enemyPosition.y += (deltaY / distance) * 10;
                 }
 
                 enemy.style.left = `${Math.round(enemyPosition.x)}px`;
@@ -280,6 +292,7 @@
                 movingDirection = event.key.replace('Arrow', '').toLowerCase();
                 if (!moveInterval) {
                     moveInterval = setInterval(movePlayer, 20);
+                    gameStarted = true; // Set the game as started
                 }
             }
         });
