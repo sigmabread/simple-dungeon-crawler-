@@ -263,4 +263,39 @@
             });
         }
 
-        function isColliding(div1, div
+        function isColliding(div1, div2) {
+            const rect1 = div1.getBoundingClientRect();
+            const rect2 = div2.getBoundingClientRect();
+
+            return !(
+                rect1.top > rect2.bottom ||
+                rect1.bottom < rect2.top ||
+                rect1.left > rect2.right ||
+                rect1.right < rect2.left
+            );
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                movingDirection = event.key.replace('Arrow', '').toLowerCase();
+                if (!moveInterval) {
+                    moveInterval = setInterval(movePlayer, 20);
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                movingDirection = null;
+                clearInterval(moveInterval);
+                moveInterval = null;
+            }
+        });
+
+        restartButton.addEventListener('click', initializeGame);
+
+        // Start the game for the first time
+        initializeGame();
+    </script>
+</body>
+</html>
