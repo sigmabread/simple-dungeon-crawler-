@@ -210,7 +210,9 @@
                     playerHealth--;
                     updateHealthBar();
                     if (playerHealth <= 0) {
-                        gameOver();
+                        // You can implement additional logic here if you want when health reaches 0
+                        playerHealth = 0; // Ensure health doesn't go below 0
+                        updateHealthBar();
                     }
                 }
             });
@@ -240,17 +242,6 @@
         function levelUp() {
             level++;
             alert(`Congratulations! You've reached Level ${level}!`);
-            initializeGame();
-        }
-
-        function gameOver() {
-            clearInterval(enemyInterval);
-            clearInterval(moveInterval);
-            alert('Game Over! You were caught by an enemy!');
-            if (treasureCount > highScore) {
-                highScore = treasureCount;
-                highScoreDisplay.textContent = highScore;
-            }
             initializeGame();
         }
 
